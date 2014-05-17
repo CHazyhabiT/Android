@@ -1,0 +1,10 @@
+<resources>
+
+    <string name="app_name">Crystal Ball</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="menu_settings">Settings</string>
+    <string name="button">Enlighten Me!</string>
+    <string name="predict">Chester</string>
+    <string name="image_desc">used to place image</string>
+
+</resources>

@@ -1,4 +1,4 @@
-package com.example.crystal.ball;
+package com.chester.android.crystalball;
 
 import android.app.Activity;
 import android.graphics.drawable.AnimationDrawable;
@@ -8,20 +8,17 @@ import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.os.Bundle;
 import android.view.Menu;
-import android.view.View;
 import android.view.animation.AlphaAnimation;
-import android.view.animation.Animation;
-import android.view.animation.ScaleAnimation;
-import android.view.animation.TranslateAnimation;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
-import com.chester.android.crystal.ball.R;
-import com.example.crystal.ball.ShakeDetector.OnShakeListener;
+
+import com.chester.android.crystalball.R;
+import com.chester.android.crystalball.ShakeDetector.OnShakeListener;
 
 public class MainActivity extends Activity {
 
-	private CrystalBall mCrystalBall = new CrystalBall();
+	String[] answers = getResources().getStringArray(R.array.crystalball_answers);
+	private CrystalBall mCrystalBall = new CrystalBall(answers);
 	// UI components
 	private TextView mAnswerLabel;
 	private ImageView mCrystalBallImage;

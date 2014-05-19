@@ -1,22 +1,14 @@
-package com.example.crystal.ball;
+package com.chester.android.crystalball;
 
 import java.util.Random;
 
 public class CrystalBall {
 	// Member variables (properties about the object)
-	public String[] mAnswers = { 
-			"MJ", 
-			"Cha for Tea",
-			"Yusoken", 
-			"In and Out",
-			"Subway", 
-			"Gogi",
-			"Grade 3 Class 2", 
-			"Panda",
-			"Wendeys",
-			"Teriyaki",
-			"Sandwich",
-			"Chipotile"};
+	public String[] mAnswers;
+	
+	public CrystalBall(String[] answers) {
+		mAnswers = answers;
+	}
 	
 	// Methods (abilities: things the object can do)
 	public String getAnAnswer() { 

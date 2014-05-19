@@ -56,12 +56,10 @@ public class MainBlogListActivity extends ListActivity {
 			mProgressBar.setVisibility(View.VISIBLE);
 			GetBlogPostsTask getBlogPostsTask = new GetBlogPostsTask();
 			getBlogPostsTask.execute();
-			
+			Toast.makeText(this, "Network is available! Please wait!", Toast.LENGTH_LONG).show();
 		} else {
 			Toast.makeText(this, "Network is unavailable!", Toast.LENGTH_LONG).show();
 		}
-
-
 	}
 
 
@@ -81,12 +79,9 @@ public class MainBlogListActivity extends ListActivity {
 				Toast.makeText(this, "Url is null!", Toast.LENGTH_LONG).show();
 			}
 			
-			
 		} catch (Exception e) {
-			// TODO: handle exception
+			logException(e);
 		}
-		
-		
 	}
 	
     /**
@@ -97,12 +92,10 @@ public class MainBlogListActivity extends ListActivity {
 	private boolean isNetworkAvailable() {
 		ConnectivityManager manager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo networkInfo = manager.getActiveNetworkInfo();
-		
 		boolean isAvailable = false;
 		if (networkInfo != null && networkInfo.isConnected()) {
 			isAvailable = true;
 		}
-		
 		return isAvailable;
 	}
 	
@@ -131,18 +124,17 @@ public class MainBlogListActivity extends ListActivity {
 	 * display empty TextView
 	 */
     private void updateDisplayForError() {
+    	// display alertDialog
     	AlertDialog.Builder builder = new AlertDialog.Builder(this);
     	builder.setTitle(getString(R.string.dialog_error_title));
     	builder.setMessage(getString(R.string.dialog_error_message));
     	builder.setPositiveButton(android.R.string.ok, null);
     	AlertDialog dialog = builder.create();
     	dialog.show();
-    	
+    	// display text of empty textView 
     	mEmptyTextView = (TextView) getListView().getEmptyView();
     	mEmptyTextView.setText(getString(R.string.no_item));
 	}
-
-
 
 	private void logException(Exception e) {
     	Log.e(TAG, "Exception caught!", e);
@@ -157,10 +149,9 @@ public class MainBlogListActivity extends ListActivity {
 				URL blogFeedUrl = new URL("http://blog.teamtreehouse.com/api/get_recent_summary/?count=" + NUMBER_OF_POSTS);
 				HttpURLConnection connection = (HttpURLConnection) blogFeedUrl.openConnection();
 				connection.connect();
-				
 				responseCode = connection.getResponseCode();
-				
 				if(responseCode==HttpsURLConnection.HTTP_OK) {
+					Log.i(TAG, "Successful HTTP Response Code: " + responseCode);
 					InputStream inputStream = connection.getInputStream();
 					Reader reader = new InputStreamReader(inputStream);
 					int contentLength = connection.getContentLength();
@@ -168,8 +159,6 @@ public class MainBlogListActivity extends ListActivity {
 					reader.read(charArray);
 					String responseData = charArray.toString();
 					jsonResponse = new JSONObject(responseData);
-					
-					
 				} else {
 					Log.i(TAG, "Unsuccessful HTTP Response Code: " + responseCode);
 				}
@@ -188,12 +177,8 @@ public class MainBlogListActivity extends ListActivity {
 		protected void onPostExecute(JSONObject result) {
 			// super.onPostExecute(result);
 			handleBlogResponse(result);
-			
 		}
-
 	}
-
-
 
 
 }

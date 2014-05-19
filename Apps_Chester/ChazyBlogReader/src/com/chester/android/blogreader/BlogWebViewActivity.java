@@ -1,7 +1,6 @@
 package com.chester.android.blogreader;
 
-import com.chester.android.blogreader.R;
-
+import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
@@ -26,6 +25,11 @@ public class BlogWebViewActivity extends Activity {
 		
 		mWebView = (WebView) findViewById(R.id.webView1);
 		mWebView.loadUrl(mUrl);
+		
+		// ActionBar actionBar = getSupportActionBar();
+		ActionBar actionBar = getActionBar();
+	    actionBar.setDisplayHomeAsUpEnabled(true);
+	    
 
 	}
 

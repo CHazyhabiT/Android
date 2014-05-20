@@ -10,8 +10,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import javax.net.ssl.HttpsURLConnection;
-
 import org.json.JSONObject;
 
 import android.app.AlertDialog;
@@ -32,7 +30,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.chester.android.blogreader.dummy.BlogPosts;
-import com.chester.android.blogreader.R;
 
 public class MainBlogListActivity extends ListActivity {
 
@@ -150,14 +147,16 @@ public class MainBlogListActivity extends ListActivity {
 				HttpURLConnection connection = (HttpURLConnection) blogFeedUrl.openConnection();
 				connection.connect();
 				responseCode = connection.getResponseCode();
-				if(responseCode==HttpsURLConnection.HTTP_OK) {
+				if(responseCode==HttpURLConnection.HTTP_OK) {
 					Log.i(TAG, "Successful HTTP Response Code: " + responseCode);
 					InputStream inputStream = connection.getInputStream();
 					Reader reader = new InputStreamReader(inputStream);
 					int contentLength = connection.getContentLength();
 					char[] charArray = new char[contentLength];
 					reader.read(charArray);
-					String responseData = charArray.toString();
+					// charArray.toString will cause JSONException
+					String responseData = new String(charArray);
+					Log.i(TAG, responseData);
 					jsonResponse = new JSONObject(responseData);
 				} else {
 					Log.i(TAG, "Unsuccessful HTTP Response Code: " + responseCode);

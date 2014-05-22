@@ -9,7 +9,7 @@
     tools:context="com.chester.android.chazyribbit.LoginActivity" >
 
     <EditText
-        android:id="@+id/usernameField1"
+        android:id="@+id/usernameField"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
@@ -24,8 +24,8 @@
         android:id="@+id/passwordField"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/usernameField1"
-        android:layout_below="@+id/usernameField1"
+        android:layout_alignLeft="@+id/usernameField"
+        android:layout_below="@+id/usernameField"
         android:ems="10"
         android:hint="@string/password_hint"
         android:inputType="textPassword" />

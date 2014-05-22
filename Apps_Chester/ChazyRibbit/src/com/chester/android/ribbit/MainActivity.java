@@ -1,25 +1,148 @@
 package com.chester.android.ribbit;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 
 import android.app.ActionBar;
+import android.app.AlertDialog;
 import android.app.FragmentTransaction;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.view.LayoutInflater;
+import android.util.Log;
 import android.view.Menu;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
+import android.view.MenuItem;
+import android.view.Window;
+import android.widget.Toast;
+
+import com.parse.ParseAnalytics;
+import com.parse.ParseUser;
 
 public class MainActivity extends FragmentActivity implements
 		ActionBar.TabListener {
+	public static final String TAG = MainActivity.class.getSimpleName();
+	public static final int TAKE_PHOTO_REQUEST = 0;
+	public static final int TAKE_VIDEO_REQUEST = 1;
+	public static final int PICK_PHOTO_REQUEST = 2;
+	public static final int PICK_VIDEO_REQUEST = 3;
+	
+	public static final int FILE_SIZE_LIMIT = 1024*1024*10; // 10 MB
+	
+	public static final int MEDIA_TYPE_IMAGE = 4;
+	public static final int MEDIA_TYPE_VIDEO = 5;
+	
+	protected Uri mMediaUri;
 
+	
+	protected DialogInterface.OnClickListener mDialogListener = new DialogInterface.OnClickListener() {
+		
+		@Override
+		public void onClick(DialogInterface dialog, int which) {
+			switch (which) {
+			case 0: // take picture
+				Intent takePhotoIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+				mMediaUri = getOutputMediaFileUri(MEDIA_TYPE_IMAGE);
+				if(mMediaUri==null) {
+					// display an error
+					Toast.makeText(MainActivity.this, getString(R.string.error_external_storage), Toast.LENGTH_LONG).show();
+				} else {
+					takePhotoIntent.putExtra(MediaStore.EXTRA_OUTPUT, mMediaUri);
+					startActivityForResult(takePhotoIntent, TAKE_PHOTO_REQUEST);
+				}
+				break;
+			case 1: // take video
+				Intent takeVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+				mMediaUri = getOutputMediaFileUri(MEDIA_TYPE_VIDEO);
+				if(mMediaUri==null) {
+					// display an error
+					Toast.makeText(MainActivity.this, getString(R.string.error_external_storage), Toast.LENGTH_LONG).show();
+				} else {
+					takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, mMediaUri);
+					// 10 stands for 10 seconds
+					takeVideoIntent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, 10);
+					// 0 stands for low quality
+					takeVideoIntent.putExtra(MediaStore.EXTRA_VIDEO_QUALITY, 0);
+					startActivityForResult(takeVideoIntent, TAKE_VIDEO_REQUEST);
+				}
+				break;
+			case 2: // choose picture
+				Intent pickPhotoIntent = new Intent(Intent.ACTION_GET_CONTENT);
+				pickPhotoIntent.setType("image/*");
+				startActivityForResult(pickPhotoIntent, PICK_PHOTO_REQUEST);
+				break;
+			case 3: // choose video
+				Intent pickVideoIntent = new Intent(Intent.ACTION_GET_CONTENT);
+				pickVideoIntent.setType("video/*");
+				Toast.makeText(MainActivity.this, getString(R.string.video_file_size_warning), Toast.LENGTH_LONG).show();
+				startActivityForResult(pickVideoIntent, PICK_VIDEO_REQUEST);
+				break;
+
+			default:
+				break;
+			}
+		}
+	};
+
+	protected Uri getOutputMediaFileUri(int mediaType) {
+		// to be safe, you should check SD Card is mounted
+		// using Environment.getExternalStorageState() before doing this
+		if(isExternalStorageAvailable()) {
+			// 1. get the external storage directory
+			String appName = MainActivity.this.getString(R.string.app_name);
+			File mediaStorageDir = new File(
+					Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+					appName);
+			Log.i(TAG, mediaStorageDir.getPath());
+			// 2. create the sub dire
+			if(!mediaStorageDir.exists()) {
+				// File.mkdirs() will make directories along this path
+				if(!mediaStorageDir.mkdirs()) {
+					Log.e(TAG, "Fail to make directory.");
+					return null;
+				};
+			}
+			// 3. create the file name
+			// 4. create the file
+			File mediaFile;
+			Date now = new Date();
+			String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(now);
+			String path = mediaStorageDir.getPath() + File.separator;
+			if(mediaType==MEDIA_TYPE_IMAGE) {
+				mediaFile = new File(path + "IMG_" + timeStamp + ".jpg");
+				
+			} else if(mediaType==MEDIA_TYPE_VIDEO) {
+				mediaFile = new File(path + "VID_" + timeStamp + ".mp4");
+				
+			} else {
+				return null;
+			}
+			Log.d(TAG, "File path: "+Uri.fromFile(mediaFile));
+			// 5. create the file Uri
+			return Uri.fromFile(mediaFile);
+			
+		} else {
+			return null;
+		}
+
+	}
+	
+	private boolean isExternalStorageAvailable() {
+		String state = Environment.getExternalStorageState();
+		if(state.equals(Environment.MEDIA_MOUNTED)) {
+			return true;
+		} else return false;
+	}
+	
 	/**
 	 * The {@link android.support.v4.view.PagerAdapter} that will provide
 	 * fragments for each of the sections. We use a
@@ -35,29 +158,45 @@ public class MainActivity extends FragmentActivity implements
 	 */
 	ViewPager mViewPager;
 
+	
+	// Implementing Tabs with Fragments
+	// 1. Create a fragment container in an Activity
+	// 2. Create fragment classes and layouts
+	// 3. Add the initial fragment to the Activity
+	// 4. Add tabs to the Action Bar
+	// 5. Add a TabListener that loads new Fragments
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 		setContentView(R.layout.activity_main);
-		
-		Intent intent = new Intent(this, LoginActivity.class);
-		// the LoginActivity should be the new task
-		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-		// the current one should be cleared
-		intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
-		
-		startActivity(intent);
+
+		// Tracks this application being launched
+		// It will make a network call to track that the app was opened, for
+		// analytics purposes.
+		// If it was opened via activating a push notification, that info will
+		// be stored too.
+		ParseAnalytics.trackAppOpened(getIntent());
+
+		ParseUser currentUser = ParseUser.getCurrentUser();
+		if (currentUser == null) {
+			navigateToLogin();
+		} else {
+			Log.i(TAG, currentUser.getUsername());
+		}
 
 		// Set up the action bar.
 		final ActionBar actionBar = getActionBar();
 		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
 
-		// Create the adapter that will return a fragment for each of the three
+		// Create the adapter that will return a fragment for each of the two
 		// primary sections of the app.
-		mSectionsPagerAdapter = new SectionsPagerAdapter(
+		mSectionsPagerAdapter = new SectionsPagerAdapter(this,
 				getSupportFragmentManager());
 
 		// Set up the ViewPager with the sections adapter.
+		// all the fragments will be created
 		mViewPager = (ViewPager) findViewById(R.id.pager);
 		mViewPager.setAdapter(mSectionsPagerAdapter);
 
@@ -83,12 +222,117 @@ public class MainActivity extends FragmentActivity implements
 					.setTabListener(this));
 		}
 	}
+	
+
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		// TODO Auto-generated method stub
+		super.onActivityResult(requestCode, resultCode, data);
+		if(resultCode==RESULT_OK) {
+			// add it to the gallery
+			if(requestCode==PICK_PHOTO_REQUEST||requestCode==PICK_VIDEO_REQUEST) {
+				if(data==null) {
+					Toast.makeText(MainActivity.this, getString(R.string.general_error), Toast.LENGTH_LONG).show();
+				} else {
+					mMediaUri = data.getData();
+					
+				}
+				Log.i(TAG, "Media Uri "+ mMediaUri);
+				if(requestCode==PICK_VIDEO_REQUEST) {
+					// make sure the file is less than 10 MB
+					int fileSize = 0;
+					InputStream inputStream = null;
+					try {
+						inputStream = getContentResolver().openInputStream(mMediaUri);
+						fileSize = inputStream.available();
+					} catch (FileNotFoundException e) {
+						Toast.makeText(MainActivity.this, getString(R.string.error_opening_file), Toast.LENGTH_LONG).show();
+						return;
+					} catch (IOException e) {
+						Toast.makeText(MainActivity.this, getString(R.string.error_opening_file), Toast.LENGTH_LONG).show();
+						return;
+					} finally {
+						try {
+							inputStream.close();
+						} catch (IOException e) { /* intentionally blank */ }
+					}
+					if(fileSize>=FILE_SIZE_LIMIT) {
+						Toast.makeText(MainActivity.this, getString(R.string.error_file_size_too_large), Toast.LENGTH_LONG).show();
+						return;
+					}
+				}
+			} else {
+				Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+				mediaScanIntent.setData(mMediaUri);
+				sendBroadcast(mediaScanIntent);
+			}
+			Intent recipientsIntent = new Intent(MainActivity.this, RecipientsActivity.class);
+			recipientsIntent.setData(mMediaUri);
+			String fileType;
+			if(requestCode==TAKE_PHOTO_REQUEST||requestCode==PICK_PHOTO_REQUEST) {
+				fileType = ParseConstants.TYPE_IMAGE;
+			} else {
+				fileType = ParseConstants.TYPE_VIDEO;
+			}
+			
+			recipientsIntent.putExtra(ParseConstants.KEY_FILE_TYPE, fileType);
+			startActivity(recipientsIntent);
+			
+			
+			
+			
+			
+		} else if(resultCode==RESULT_CANCELED){
+			Toast.makeText(MainActivity.this, R.string.general_error, Toast.LENGTH_LONG).show();
+			
+		}
+		
+		
+	}
+
+
+	private void navigateToLogin() {
+		Intent intent = new Intent(this, LoginActivity.class);
+		// the LoginActivity should be the new task
+		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		// the current one should be cleared
+		intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+		startActivity(intent);
+	}
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		int itemId = item.getItemId();
+		
+		switch(itemId) {
+		case R.id.action_logout :
+			ParseUser.logOut();
+			navigateToLogin();
+			break;
+		case R.id.action_edit_friends :
+			Intent intent = new Intent(this, EditFriendsActivity.class);
+			startActivity(intent);
+			break;
+		case R.id.action_camera :
+			AlertDialog.Builder builder = new AlertDialog.Builder(this);
+			builder.setItems(R.array.camera_choices, mDialogListener);
+			AlertDialog dialog = builder.create();
+			dialog.show();
+			break;
+		default :
+			break;
+			
+		}
+
+		return super.onOptionsItemSelected(item);
 	}
 
 	@Override
@@ -107,76 +351,6 @@ public class MainActivity extends FragmentActivity implements
 	@Override
 	public void onTabReselected(ActionBar.Tab tab,
 			FragmentTransaction fragmentTransaction) {
-	}
-
-	/**
-	 * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
-	 * one of the sections/tabs/pages.
-	 */
-	public class SectionsPagerAdapter extends FragmentPagerAdapter {
-
-		public SectionsPagerAdapter(FragmentManager fm) {
-			super(fm);
-		}
-
-		@Override
-		public Fragment getItem(int position) {
-			// getItem is called to instantiate the fragment for the given page.
-			// Return a DummySectionFragment (defined as a static inner class
-			// below) with the page number as its lone argument.
-			Fragment fragment = new DummySectionFragment();
-			Bundle args = new Bundle();
-			args.putInt(DummySectionFragment.ARG_SECTION_NUMBER, position + 1);
-			fragment.setArguments(args);
-			return fragment;
-		}
-
-		@Override
-		public int getCount() {
-			// Show 3 total pages.
-			return 3;
-		}
-
-		@Override
-		public CharSequence getPageTitle(int position) {
-			Locale l = Locale.getDefault();
-			switch (position) {
-			case 0:
-				return getString(R.string.title_section1).toUpperCase(l);
-			case 1:
-				return getString(R.string.title_section2).toUpperCase(l);
-			case 2:
-				return getString(R.string.title_section3).toUpperCase(l);
-			}
-			return null;
-		}
-	}
-
-	/**
-	 * A dummy fragment representing a section of the app, but that simply
-	 * displays dummy text.
-	 */
-	public static class DummySectionFragment extends Fragment {
-		/**
-		 * The fragment argument representing the section number for this
-		 * fragment.
-		 */
-		public static final String ARG_SECTION_NUMBER = "section_number";
-
-		public DummySectionFragment() {
-		}
-
-		@Override
-		public View onCreateView(LayoutInflater inflater, ViewGroup container,
-				Bundle savedInstanceState) {
-			View rootView = inflater.inflate(R.layout.fragment_main_dummy,
-					container, false);
-			TextView dummyTextView = (TextView) rootView
-					.findViewById(R.id.section_label);
-			dummyTextView.setText(Integer.toString(getArguments().getInt(
-					ARG_SECTION_NUMBER)));
-			return rootView;
-		}
 	}
 
 }
